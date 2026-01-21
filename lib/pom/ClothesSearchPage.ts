@@ -42,16 +42,27 @@ export class ClothesSearchPage extends BasePage {
         for (let i = 0; i < Math.min(count, 8); i++) {
             const item = results.nth(i);
             const title = await item.locator('h3').innerText().catch(() => 'Unknown Item');
-            const price = await item.locator('.a8Pemb').first().innerText().catch(() => '$0.00'); // Price class
+            // Price usually has 'span' with currency
+            const price = await item.locator('span').filter({ hasText: '$' }).first().innerText().catch(() => '$0.00');
             const imageUrl = await item.locator('img').first().getAttribute('src').catch(() => '');
-            // Link is usually in a parent anchor
-            const link = await item.locator('a').first().getAttribute('href').catch(() => '#');
+
+            // Links in Google Shopping are often redirects or relative
+            let link = await item.locator('a').first().getAttribute('href').catch(() => '');
+
+            if (link) {
+                if (link.startsWith('/')) {
+                    link = `https://google.com${link}`;
+                }
+            } else {
+                // Fallback search link if extraction fails
+                link = `https://www.google.com/search?q=${encodeURIComponent(title)}&tbm=shop`;
+            }
 
             products.push({
                 title,
                 price,
                 imageUrl: imageUrl || '',
-                link: link?.startsWith('/url') ? 'https://google.com' + link : link || '',
+                link: link || '#',
                 source: 'Google Shopping'
             });
         }
@@ -60,27 +71,28 @@ export class ClothesSearchPage extends BasePage {
     }
 
     private getMockData(query: string): Product[] {
+        const encoded = encodeURIComponent(query);
         return [
             {
                 title: `${query} Cosplay Costume Full Set`,
                 price: '$45.99',
-                imageUrl: 'https://placehold.co/400x400/1e293b/white?text=Outfit+1',
-                link: '#',
-                source: 'CosplayWorld'
+                imageUrl: 'https://placehold.co/400x600/1e293b/8b5cf6?text=Cosplay+Set',
+                link: `https://www.amazon.com/s?k=${encoded}+cosplay`,
+                source: 'Amazon'
             },
             {
                 title: `${query} Signature Hoodie`,
                 price: '$29.99',
-                imageUrl: 'https://placehold.co/400x400/1e293b/white?text=Hoodie',
-                link: '#',
-                source: 'AnimeMerch'
+                imageUrl: 'https://placehold.co/400x600/1e293b/ec4899?text=Hoodie',
+                link: `https://www.etsy.com/search?q=${encoded}+hoodie`,
+                source: 'Etsy'
             },
             {
                 title: `High Quality ${query} Wig`,
                 price: '$15.50',
-                imageUrl: 'https://placehold.co/400x400/1e293b/white?text=Wig',
-                link: '#',
-                source: 'WigStore'
+                imageUrl: 'https://placehold.co/400x600/1e293b/22c55e?text=Wig',
+                link: `https://www.ebay.com/sch/i.html?_nkw=${encoded}+wig`,
+                source: 'eBay'
             }
         ];
     }
