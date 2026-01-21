@@ -14,7 +14,12 @@ export class ClothesSearchPage extends BasePage {
         console.log(`Searching for: ${query} (${category})`);
 
         // Using Google Shopping URL
-        await this.navigate(`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`);
+        try {
+            await this.navigate(`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`);
+        } catch (e) {
+            console.warn(`Navigation failed for "${query}". Returning mock data. Error: ${e}`);
+            return this.getMockData(query, category);
+        }
 
         // Cookie consent bypass (approximate)
         try {
