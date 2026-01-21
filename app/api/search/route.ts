@@ -24,10 +24,21 @@ export async function POST(req: NextRequest) {
         const { browser, page } = await BrowserFactory.createPage();
         const searchPage = new ClothesSearchPage(page);
 
-        // Perform search
-        const results = await searchPage.search(searchQuery);
+        // Perform parallel searches for variety
+        const [cosplayResults, inspiredResults] = await Promise.all([
+            searchPage.search(`${searchQuery} cosplay costume`, 'Cosplay'),
+            searchPage.search(`${searchQuery} inspired outfit aesthetic`, 'Inspired')
+        ]);
 
         await browser.close();
+
+        // Interleave results for better UX
+        const results = [];
+        const maxLength = Math.max(cosplayResults.length, inspiredResults.length);
+        for (let i = 0; i < maxLength; i++) {
+            if (cosplayResults[i]) results.push(cosplayResults[i]);
+            if (inspiredResults[i]) results.push(inspiredResults[i]);
+        }
 
         return NextResponse.json({ results });
 

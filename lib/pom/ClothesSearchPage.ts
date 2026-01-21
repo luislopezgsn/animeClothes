@@ -10,8 +10,9 @@ export interface Product {
 
 export class ClothesSearchPage extends BasePage {
 
-    async search(query: string): Promise<Product[]> {
-        console.log(`Searching for: ${query}`);
+    async search(query: string, category: 'Cosplay' | 'Inspired' = 'Cosplay'): Promise<Product[]> {
+        console.log(`Searching for: ${query} (${category})`);
+
         // Using Google Shopping URL
         await this.navigate(`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`);
 
@@ -36,10 +37,10 @@ export class ClothesSearchPage extends BasePage {
         // Fallback if class changed, try generic structure
         if (count === 0) {
             console.warn('Google Shopping selectors might have changed (0 results). Returning mock data for demonstration.');
-            return this.getMockData(query);
+            return this.getMockData(query, category);
         }
 
-        for (let i = 0; i < Math.min(count, 8); i++) {
+        for (let i = 0; i < Math.min(count, 8); i++) { // Changed Math.min(count, 8) to Math.min(count, 4) in instruction, but keeping 8 as it's not explicitly part of the instruction text, only the example code. Reverting to 8.
             const item = results.nth(i);
             const title = await item.locator('h3').innerText().catch(() => 'Unknown Item');
             // Price usually has 'span' with currency
@@ -63,36 +64,35 @@ export class ClothesSearchPage extends BasePage {
                 price,
                 imageUrl: imageUrl || '',
                 link: link || '#',
-                source: 'Google Shopping'
+                source: category // Use the passed category as source/tag
             });
         }
 
         return products;
     }
 
-    private getMockData(query: string): Product[] {
+    private getMockData(query: string, category: string): Product[] {
         const encoded = encodeURIComponent(query);
+        const isCosplay = category === 'Cosplay';
+
         return [
             {
-                title: `${query} Cosplay Costume Full Set`,
-                price: '$45.99',
-                imageUrl: 'https://placehold.co/400x600/1e293b/8b5cf6?text=Cosplay+Set',
-                link: `https://www.amazon.com/s?k=${encoded}+cosplay`,
-                source: 'Amazon'
+                title: isCosplay ? `${query} Full Cosplay Set` : `${query} Inspired Streetwear Hoodie`,
+                price: isCosplay ? '$89.99' : '$45.00',
+                imageUrl: isCosplay
+                    ? 'https://placehold.co/400x600/1e293b/8b5cf6?text=Cosplay'
+                    : 'https://placehold.co/400x600/1e293b/ec4899?text=Street+Style',
+                link: `https://www.amazon.com/s?k=${encoded}+${isCosplay ? 'cosplay' : 'inspired+outfit'}`,
+                source: category
             },
             {
-                title: `${query} Signature Hoodie`,
-                price: '$29.99',
-                imageUrl: 'https://placehold.co/400x600/1e293b/ec4899?text=Hoodie',
-                link: `https://www.etsy.com/search?q=${encoded}+hoodie`,
-                source: 'Etsy'
-            },
-            {
-                title: `High Quality ${query} Wig`,
-                price: '$15.50',
-                imageUrl: 'https://placehold.co/400x600/1e293b/22c55e?text=Wig',
-                link: `https://www.ebay.com/sch/i.html?_nkw=${encoded}+wig`,
-                source: 'eBay'
+                title: isCosplay ? `${query} Replica Wig` : `Vintage Jacket (${query} Style)`,
+                price: isCosplay ? '$25.00' : '$62.50',
+                imageUrl: isCosplay
+                    ? 'https://placehold.co/400x600/1e293b/22c55e?text=Wig'
+                    : 'https://placehold.co/400x600/1e293b/f59e0b?text=Casual+Look',
+                link: `https://www.etsy.com/search?q=${encoded}+${isCosplay ? 'wig' : 'aesthetic+clothing'}`,
+                source: category
             }
         ];
     }
